@@ -103,7 +103,7 @@ func (s *SchedulerServer) FetchTask(req *proto.FetchTaskRequest, stream proto.Sc
 	}
 }
 
-// AckTask
+// AckTask 通知任务成功
 func (s *SchedulerServer) AckTask(ctx context.Context, req *proto.TaskAck) (*proto.AckResponse, error) {
 	fetcher := s.getFetcher(req.TaskGroup)
 	taskID, _ := strconv.ParseInt(req.TaskID, 10, 64)
