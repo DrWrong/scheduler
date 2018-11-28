@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+option go_package = "proto";
+
+service Scheduler {
+  rpc ScheduleTask(ScheduleTaskRequest) returns (ScheduleTaskResponse);
+  rpc FetchTask(FetchTaskRequest) returns (stream Task);
+  rpc AckTask(TaskAck) returns (AckResponse);
+}
+
+message AckResponse {
+}
+
+message TaskAck {
+  string taskGroup = 1;
+  string taskID = 2;
+  bool successed = 3;
+  bytes result = 4;
+}
+
+message Task {
+  // 任务ID
+  string taskID = 1;
+  // 任务所在的分组
+  string taskGroup = 2;
+  // 任务原来ID， 由它保证任务仅能提交一次， 为空时，表示任务可以被提交多次
+  string taskOriginalID = 3;
+  // 任务名称
+  string taskName = 4;
+  // 参数
+  bytes params = 5;
+  // 任务执行时间 为0时表示立即执行
+  int64 scheduleAt = 6;
+  // 任务重试的次数， 超过重试次数后会被认为失败
+  int64 maxRetryTime = 7;
+}
+
+
+message ScheduleTaskRequest {
+  string taskGroup = 1;
+  repeated Task batchTasks = 2;
+}
+
+message ScheduleTaskResponse {
+  repeated Task batchTasks = 1;
+}
+
+message FetchTaskRequest {
+  string taskGroup = 1;
+}
