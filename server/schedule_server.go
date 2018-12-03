@@ -35,7 +35,7 @@ func (s *SchedulerServer) getFetcher(taskGroup string) *model.TaskFetcher {
 	}
 
 	s.fetcherMap[taskGroup] = &model.TaskFetcher{
-		TaskGroup: taskGroup,
+		Topic: taskGroup,
 	}
 
 	return s.fetcherMap[taskGroup]
@@ -48,17 +48,17 @@ func (s *SchedulerServer) ScheduleTask(ctx context.Context, req *proto.ScheduleT
 		return nil, errors.New("Batch task is 0")
 	}
 
-	fetcher := s.getFetcher(req.TaskGroup)
+	fetcher := s.getFetcher(req.Topic)
 
 	storeTasks := make([]*store.Task, 0, len(req.BatchTasks))
 	for _, task := range req.BatchTasks {
 		storeTasks = append(storeTasks, &store.Task{
-			Group:      task.TaskGroup,
-			OriginalID: task.TaskOriginalID,
-			Name:       task.TaskName,
-			Params:     task.Params,
-			ScheduleAt: task.ScheduleAt,
-			RetryTime:  task.MaxRetryTime,
+			Topic:        task.Topic,
+			OriginalID:   task.OriginalID,
+			Name:         task.Name,
+			Payload:      task.Payload,
+			ScheduleAt:   task.ScheduleAt,
+			MaxRetryTime: task.MaxRetryTime,
 		})
 	}
 
@@ -76,7 +76,7 @@ func (s *SchedulerServer) ScheduleTask(ctx context.Context, req *proto.ScheduleT
 // FetchTask 任务分发
 func (s *SchedulerServer) FetchTask(req *proto.FetchTaskRequest, stream proto.Scheduler_FetchTaskServer) error {
 	logrus.WithField("Receive request to fetch task %+v", req)
-	fetcher := s.getFetcher(req.TaskGroup)
+	fetcher := s.getFetcher(req.Topic)
 
 	var internalErrorTime int
 	for {
@@ -85,7 +85,7 @@ func (s *SchedulerServer) FetchTask(req *proto.FetchTaskRequest, stream proto.Sc
 			internalErrorTime = 0
 			if task != nil {
 				if err := stream.Send(task.ToDomain()); err != nil {
-					fetcher.AckFail(task.ID, false)
+					fetcher.AckFail(task.ID, false, 0)
 					logrus.WithField("err", err).Error("Send to client error")
 					return err
 				}
@@ -105,13 +105,13 @@ func (s *SchedulerServer) FetchTask(req *proto.FetchTaskRequest, stream proto.Sc
 
 // AckTask 通知任务成功
 func (s *SchedulerServer) AckTask(ctx context.Context, req *proto.TaskAck) (*proto.AckResponse, error) {
-	fetcher := s.getFetcher(req.TaskGroup)
-	taskID, _ := strconv.ParseInt(req.TaskID, 10, 64)
+	fetcher := s.getFetcher(req.Topic)
+	taskID, _ := strconv.ParseInt(req.Id, 10, 64)
 	if req.Successed {
 		err := fetcher.AckSuccess(taskID, req.Result)
 		return nil, err
 	}
-	err := fetcher.AckFail(taskID, true)
+	err := fetcher.AckFail(taskID, true, req.ScheduleAt)
 	return nil, err
 
 }

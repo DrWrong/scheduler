@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"time"
 )
 
 var configFile = flag.String("conf", "", "config path")
@@ -14,6 +15,12 @@ var Config *config
 type config struct {
 	GRPC struct {
 		Listen string
+	}
+	TaskFetcher struct {
+		DBFetchTaskNumber        int
+		CacheMaxDuration         time.Duration
+		EmptyMinDuration         time.Duration
+		DeliverTaskReplyDuration time.Duration
 	}
 }
 

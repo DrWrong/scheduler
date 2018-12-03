@@ -10,14 +10,15 @@ import (
 type FailTask struct {
 	tableName struct{} `sql:"?schema.fail_tasks" pg:",discard_unknown_columns"`
 
-	ID          int64
-	Group       string
-	OriginalID  string
-	Name        string
-	Params      []byte
-	ScheduleAt  int64
-	RetryTime   int64
-	CreatedTime time.Time
+	ID           int64
+	Topic        string
+	OriginalID   string
+	Name         string
+	Payload      []byte
+	ScheduleAt   int64
+	MaxRetryTime int64
+	RetriedTime  int64
+	CreatedTime  time.Time
 }
 
 // FailTaskDao 失败的任务
